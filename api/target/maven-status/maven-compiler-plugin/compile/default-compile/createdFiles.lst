@@ -1,5 +1,6 @@
 com\system\api\controller\JobController.class
 com\system\api\entity\JobEntity.class
+com\system\api\service\JobService.class
 com\system\api\dto\CreateJobRequest.class
 com\system\api\repository\JobRepository.class
 com\system\api\ApiApplication.class
