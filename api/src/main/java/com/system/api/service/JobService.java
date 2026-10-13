@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-
+import java.util.Optional;
 @Service
 public class JobService {
 
@@ -29,14 +29,12 @@ public class JobService {
     @Transactional
     public JobEntity createJob(CreateJobRequest request) {
         if (request.getType() == null) {
-            throw new IllegalArgumentException(
-                    "Job type is required");
+            throw new IllegalArgumentException("Job type is required");
         }
 
         if (request.getPayload() == null
                 || request.getPayload().isBlank()) {
-            throw new IllegalArgumentException(
-                    "Job payload is required");
+            throw new IllegalArgumentException("Job payload is required");
         }
 
         JsonNode payload;
@@ -44,13 +42,27 @@ public class JobService {
             payload = objectMapper.readTree(request.getPayload());
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException(
-                    "Job payload must contain valid JSON",
-                    exception);
+                    "Job payload must contain valid JSON", exception);
         }
 
         if (payload == null || !payload.isObject()) {
             throw new IllegalArgumentException(
                     "Job payload must be a JSON object");
+        }
+
+        String key = request.getIdempotencyKey();
+
+        if (key != null && !key.isBlank()) {
+            key = key.trim();
+
+            jobRepository.insertIfAbsent(
+                    key,
+                    request.getType().name(),
+                    payload.toString());
+
+            return jobRepository.findByIdempotencyKey(key)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Job was inserted but could not be retrieved"));
         }
 
         JobEntity job = new JobEntity();
@@ -64,12 +76,6 @@ public class JobService {
         job.setRunAt(now);
         job.setCreatedAt(now);
         job.setUpdatedAt(now);
-
-        if (request.getIdempotencyKey() != null
-                && !request.getIdempotencyKey().isBlank()) {
-            job.setIdempotencyKey(
-                    request.getIdempotencyKey().trim());
-        }
 
         return jobRepository.save(job);
     }
