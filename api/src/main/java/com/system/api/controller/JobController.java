@@ -1,8 +1,8 @@
-
 package com.system.api.controller;
 
 import com.system.api.dto.CreateJobRequest;
 import com.system.api.entity.JobEntity;
+import com.system.api.service.JobCreationResult;
 import com.system.api.service.JobService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +25,14 @@ public class JobController {
     public ResponseEntity<JobEntity> createJob(
             @RequestBody CreateJobRequest request) {
 
-        JobEntity createdJob = jobService.createJob(request);
+        JobCreationResult result = jobService.createJob(request);
+
+        HttpStatus status = result.created()
+                ? HttpStatus.CREATED
+                : HttpStatus.OK;
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(createdJob);
+                .status(status)
+                .body(result.job());
     }
 }

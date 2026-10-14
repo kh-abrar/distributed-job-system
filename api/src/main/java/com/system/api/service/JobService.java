@@ -1,4 +1,3 @@
-
 package com.system.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,11 +7,16 @@ import com.system.api.dto.CreateJobRequest;
 import com.system.api.entity.JobEntity;
 import com.system.api.repository.JobRepository;
 import com.system.common.enums.JobStatus;
+import com.system.api.service.JobCreationResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.Instant;
 import java.util.Optional;
+
 @Service
 public class JobService {
 
@@ -27,7 +31,7 @@ public class JobService {
     }
 
     @Transactional
-    public JobEntity createJob(CreateJobRequest request) {
+    public JobCreationResult createJob(CreateJobRequest request) {
         if (request.getType() == null) {
             throw new IllegalArgumentException("Job type is required");
         }
@@ -55,14 +59,29 @@ public class JobService {
         if (key != null && !key.isBlank()) {
             key = key.trim();
 
-            jobRepository.insertIfAbsent(
+            int inserted = jobRepository.insertIfAbsent(
                     key,
                     request.getType().name(),
                     payload.toString());
 
-            return jobRepository.findByIdempotencyKey(key)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Job was inserted but could not be retrieved"));
+            JobEntity existingJob =
+                    jobRepository.findByIdempotencyKey(key)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Job could not be retrieved after insertion"));
+
+            boolean sameType =
+                    existingJob.getType() == request.getType();
+
+            boolean samePayload =
+                    existingJob.getPayload().equals(payload);
+
+            if (!sameType || !samePayload) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Idempotency key is already used with a different request");
+            }
+
+            return new JobCreationResult(existingJob, inserted == 1);
         }
 
         JobEntity job = new JobEntity();
@@ -77,6 +96,8 @@ public class JobService {
         job.setCreatedAt(now);
         job.setUpdatedAt(now);
 
-        return jobRepository.save(job);
+        return new JobCreationResult(
+                jobRepository.save(job),
+                true);
     }
 }
