@@ -1,10 +1,11 @@
-
 package com.system.api.repository;
 
 import com.system.api.entity.JobEntity;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
@@ -12,9 +13,8 @@ import java.util.UUID;
 
 public interface JobRepository
         extends JpaRepository<JobEntity, UUID> {
-
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     Optional<JobEntity> findByIdempotencyKey(String idempotencyKey);
-
 
     @Modifying
     @Query(value = """

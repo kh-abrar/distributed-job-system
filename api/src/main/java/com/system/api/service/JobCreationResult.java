@@ -1,9 +1,8 @@
-
 package com.system.api.service;
 
-import com.system.api.entity.JobEntity;
+import com.system.api.dto.JobResponse;
 
 public record JobCreationResult(
-        JobEntity job,
+        JobResponse job,
         boolean created) {
 }

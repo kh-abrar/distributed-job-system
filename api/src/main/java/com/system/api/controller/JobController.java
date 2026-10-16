@@ -1,7 +1,6 @@
 package com.system.api.controller;
 
 import com.system.api.dto.CreateJobRequest;
-import com.system.api.entity.JobEntity;
 import com.system.api.service.JobCreationResult;
 import com.system.api.service.JobService;
 import org.springframework.http.HttpStatus;
@@ -10,6 +9,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.system.api.dto.JobResponse;
+import org.springframework.http.CacheControl;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -22,7 +28,7 @@ public class JobController {
     }
 
     @PostMapping
-    public ResponseEntity<JobEntity> createJob(
+    public ResponseEntity<JobResponse> createJob(
             @RequestBody CreateJobRequest request) {
 
         JobCreationResult result = jobService.createJob(request);
@@ -34,5 +40,15 @@ public class JobController {
         return ResponseEntity
                 .status(status)
                 .body(result.job());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<JobResponse> getJob(@PathVariable("id") UUID id) {
+        JobResponse job = jobService.getJob(id);
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.noStore())
+                .body(job);
     }
 }

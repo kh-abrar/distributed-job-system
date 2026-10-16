@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.api.dto.CreateJobRequest;
+import com.system.api.dto.JobResponse;
 import com.system.api.entity.JobEntity;
 import com.system.api.repository.JobRepository;
 import com.system.common.enums.JobStatus;
-import com.system.api.service.JobCreationResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class JobService {
@@ -36,7 +37,7 @@ public class JobService {
      * and matches a previously processed request.
      *
      * @param request The DTO containing job creation details (type, payload, idempotency key).
-     * @return A JobCreationResult containing the job entity and a boolean indicating if it was newly inserted.
+     * @return A JobCreationResult containing the job response DTO and a boolean indicating if it was newly inserted.
      */
     @Transactional
     public JobCreationResult createJob(CreateJobRequest request) {
@@ -98,8 +99,8 @@ public class JobService {
                         "Idempotency key is already used with a different request");
             }
 
-            // Return the existing/new job along with a flag (true if newly inserted, false if duplicate)
-            return new JobCreationResult(existingJob, inserted == 1);
+            // idempotent path: map to DTO inside the transaction
+            return new JobCreationResult(JobResponse.from(existingJob), inserted == 1);
         }
 
         // 6. Handle standard (non-idempotent) job creation
@@ -115,9 +116,26 @@ public class JobService {
         job.setCreatedAt(now);
         job.setUpdatedAt(now);
 
-        // Save and return the new job entity marked as newly created (true)
+        // non-idempotent path: map to DTO inside the transaction
         return new JobCreationResult(
-                jobRepository.save(job),
+                JobResponse.from(jobRepository.save(job)),
                 true);
+    }
+
+    /**
+     * Returns the current state of a job.
+     * Read-only: the transaction is flagged readOnly so Hibernate never
+     * dirty-checks or flushes the loaded entity.
+     *
+     * @throws ResponseStatusException 404 if no job exists with this id
+     */
+    @Transactional(readOnly = true)
+    public JobResponse getJob(UUID id) {
+        JobEntity job = jobRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Job not found: " + id));
+
+        return JobResponse.from(job);
     }
 }
