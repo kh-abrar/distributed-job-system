@@ -9,12 +9,39 @@ services:
       # Host port 5433 so a locally installed PostgreSQL on 5432 doesn't clash
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - jobs-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobs"]
+      test: ["CMD-SHELL", "pg_isready -U jobs -d jobs"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # Runs the Flyway migrations on startup, then serves the REST API
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/jobs
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Scale with: docker compose up -d --scale worker=3
+  # A worker that starts before the api has migrated the schema retries its poll with backoff.
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/jobs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Longer than worker.shutdown-grace (30s), so SIGTERM gets a graceful stop before Docker's SIGKILL
+    stop_grace_period: 40s
+
 volumes:
-  pgdata:
+  jobs-pgdata:
