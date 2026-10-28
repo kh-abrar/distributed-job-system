@@ -10,6 +10,7 @@ spring:
     hibernate:
       ddl-auto: validate
 
+  # The api owns the schema; the scripts live in the common module so the worker's tests can use them too
   flyway:
     enabled: true
     locations: classpath:db/migration
