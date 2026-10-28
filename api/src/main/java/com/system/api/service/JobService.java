@@ -5,16 +5,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.api.config.JobsProperties;
 import com.system.api.dto.CreateJobRequest;
+import com.system.api.dto.JobPage;
 import com.system.api.dto.JobResponse;
 import com.system.api.entity.JobEntity;
+import com.system.api.repository.JobQueryRepository;
 import com.system.api.repository.JobRepository;
 import com.system.api.repository.JobSubmissionRepository;
 import com.system.api.repository.JobSubmissionRepository.ExistingSubmission;
 import com.system.api.repository.JobTransitionRepository;
+import com.system.common.enums.JobStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,9 +28,13 @@ public class JobService {
     // The column is unbounded TEXT; capping keys keeps the unique index entries small
     private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 255;
 
+    private static final int DEFAULT_PAGE_SIZE = 50;
+    private static final int MAX_PAGE_SIZE = 200;
+
     private final JobRepository jobRepository;
     private final JobSubmissionRepository submissionRepository;
     private final JobTransitionRepository transitionRepository;
+    private final JobQueryRepository queryRepository;
     private final ObjectMapper objectMapper;
     private final JobsProperties properties;
 
@@ -35,11 +43,13 @@ public class JobService {
             JobRepository jobRepository,
             JobSubmissionRepository submissionRepository,
             JobTransitionRepository transitionRepository,
+            JobQueryRepository queryRepository,
             ObjectMapper objectMapper,
             JobsProperties properties) {
         this.jobRepository = jobRepository;
         this.submissionRepository = submissionRepository;
         this.transitionRepository = transitionRepository;
+        this.queryRepository = queryRepository;
         this.objectMapper = objectMapper;
         this.properties = properties;
     }
@@ -113,6 +123,34 @@ public class JobService {
     }
 
     /**
+     * Lists jobs in id order, optionally filtered by status (FR-9, FR-10).
+     *
+     * Pages are keyed on id, not an offset, so a job changing status between two
+     * requests can't make the next page skip or repeat another job. Ids are random
+     * UUIDs, so the order is stable but not chronological.
+     *
+     * @param status null for every status
+     * @param cursor nextCursor from the previous page, or null for the first page
+     * @param limit  page size, or null for the default
+     * @throws InvalidJobRequestException if limit is out of range
+     */
+    @Transactional(readOnly = true)
+    public JobPage listJobs(JobStatus status, UUID cursor, Integer limit) {
+        int pageSize = limit == null ? DEFAULT_PAGE_SIZE : limit;
+        if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+            throw new InvalidJobRequestException("limit must be between 1 and " + MAX_PAGE_SIZE);
+        }
+
+        // One extra row tells us whether another page exists, without a COUNT query
+        List<JobEntity> rows = queryRepository.findPage(status, cursor, pageSize + 1);
+        boolean hasMore = rows.size() > pageSize;
+        List<JobEntity> page = hasMore ? rows.subList(0, pageSize) : rows;
+
+        UUID nextCursor = hasMore ? page.get(page.size() - 1).getId() : null;
+        return new JobPage(page.stream().map(JobResponse::from).toList(), nextCursor);
+    }
+
+    /**
      * Cancels a PENDING job (FR-11). Running jobs (FR-12) and finished jobs (FR-13)
      * are rejected.
      *
@@ -133,6 +171,26 @@ public class JobService {
         if (!cancelled) {
             throw new JobStateConflictException(
                     "Job " + id + " is " + job.getStatus() + "; only PENDING jobs can be cancelled");
+        }
+        return JobResponse.from(job);
+    }
+
+    /**
+     * Puts a DEAD job back in the queue with a fresh attempt budget (FR-27).
+     * Same shape as cancelJob: the guarded write decides, the read picks the response.
+     *
+     * @throws JobNotFoundException      if no job exists with this id
+     * @throws JobStateConflictException if the job is not DEAD
+     */
+    @Transactional
+    public JobResponse requeueJob(UUID id) {
+        boolean requeued = transitionRepository.requeueIfDead(id);
+
+        JobEntity job = jobRepository.findById(id)
+                .orElseThrow(() -> new JobNotFoundException(id));
+        if (!requeued) {
+            throw new JobStateConflictException(
+                    "Job " + id + " is " + job.getStatus() + "; only DEAD jobs can be requeued");
         }
         return JobResponse.from(job);
     }

@@ -77,10 +77,32 @@ public abstract class AbstractIntegrationTest {
         return postJob(body, null);
     }
 
-    /** Takes the id as a string so tests can also send malformed ids. */
+    /** GET /api/jobs with a raw query string, e.g. "status=PENDING&limit=3", or "" for none. */
+    protected HttpResponse<String> listJobs(String query) {
+        String uri = "http://localhost:" + port + "/api/jobs" + (query.isEmpty() ? "" : "?" + query);
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).GET().build();
+        try {
+            return HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     protected HttpResponse<String> cancelJob(String id) {
+        return postJobAction(id, "cancel");
+    }
+
+    protected HttpResponse<String> requeueJob(String id) {
+        return postJobAction(id, "requeue");
+    }
+
+    /** POST /api/jobs/{id}/{action}. Takes the id as a string so tests can also send malformed ids. */
+    private HttpResponse<String> postJobAction(String id, String action) {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/jobs/" + id + "/cancel"))
+                .uri(URI.create("http://localhost:" + port + "/api/jobs/" + id + "/" + action))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
         try {

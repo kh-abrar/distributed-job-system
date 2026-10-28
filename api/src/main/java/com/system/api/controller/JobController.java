@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.system.api.dto.JobPage;
 import com.system.api.dto.JobResponse;
+import com.system.common.enums.JobStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,9 +47,27 @@ public class JobController {
                 .body(result.job());
     }
 
+    @GetMapping
+    public ResponseEntity<JobPage> listJobs(
+            @RequestParam(value = "status", required = false) JobStatus status,
+            @RequestParam(value = "cursor", required = false) UUID cursor,
+            @RequestParam(value = "limit", required = false) Integer limit) {
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.noStore())
+                .body(jobService.listJobs(status, cursor, limit));
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<JobResponse> cancelJob(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(jobService.cancelJob(id));
+    }
+
+    /** Admin operation (FR-27). There is no authentication in this project (spec 1.5). */
+    @PostMapping("/{id}/requeue")
+    public ResponseEntity<JobResponse> requeueJob(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(jobService.requeueJob(id));
     }
 
     @GetMapping("/{id}")
