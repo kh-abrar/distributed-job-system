@@ -12,13 +12,20 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Read model of a job. Immutable so Hibernate never writes it back: a dirty-check
+ * flush would be an unfenced full-row UPDATE that could overwrite a newer state
+ * written by a worker (G5). All writes go through native SQL.
+ */
 @Entity
+@Immutable
 @Table(name = "jobs")
 public class JobEntity {
 

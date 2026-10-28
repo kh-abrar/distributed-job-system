@@ -13,6 +13,19 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  jackson:
+    deserialization:
+      # Reject "{...} garbage" instead of silently reading the first JSON value
+      fail-on-trailing-tokens: true
+      # Reject unknown fields, e.g. an idempotencyKey still sent in the body
+      fail-on-unknown-properties: true
+
+jobs:
+  # Spec section 8: maximum payload about 64 KB, measured as serialized UTF-8 bytes
+  payload-max-bytes: 65536
+  # Spec section 8: default max automatic attempts; must stay within 1..10
+  default-max-attempts: 5
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
