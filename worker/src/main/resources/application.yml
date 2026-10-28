@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    # Matches the host port in docker-compose.yml; override with SPRING_DATASOURCE_URL
+    url: jdbc:postgresql://localhost:5433/jobs
+    username: jobs
+    password: jobs
+
+  # The api owns the schema and runs the migrations; the worker only uses it
+  flyway:
+    enabled: false
+
+# Spec section 8 starting values
+worker:
+  enabled: true
+  # Blank: hostname-pid-random. Set WORKER_ID to pin it
+  id: ${WORKER_ID:}
+  threads: 4
+  poll-interval: 500ms
+  claim-batch-size: 10
+  lease: 30s
+  heartbeat-interval: 10s
+  reaper-interval: 5s
+  reaper-batch-size: 100
+  shutdown-grace: 30s
+  backoff:
+    base: 2s
+    max: 60s
