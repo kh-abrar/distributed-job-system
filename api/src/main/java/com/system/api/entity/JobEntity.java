@@ -47,6 +47,9 @@ public class JobEntity {
     @Column(name = "max_attempts", nullable = false)
     private int maxAttempts;
 
+    @Column(name = "generation", nullable = false)
+    private int generation;
+
     @Column(name = "run_at", nullable = false)
     private Instant runAt;
 
@@ -126,6 +129,14 @@ public class JobEntity {
 
     public void setMaxAttempts(int maxAttempts) {
         this.maxAttempts = maxAttempts;
+    }
+
+    public int getGeneration() {
+        return generation;
+    }
+
+    public void setGeneration(int generation) {
+        this.generation = generation;
     }
 
     public Instant getRunAt() {

@@ -16,6 +16,7 @@ public class Job {
     private JobStatus status;
     private int attempts;
     private int maxAttempts;
+    private int generation;
     private Instant runAt;
     private String lockedBy;
     private Instant leaseExpiresAt;
@@ -81,6 +82,14 @@ public class Job {
 
     public void setMaxAttempts(int maxAttempts) {
         this.maxAttempts = maxAttempts;
+    }
+
+    public int getGeneration() {
+        return generation;
+    }
+
+    public void setGeneration(int generation) {
+        this.generation = generation;
     }
 
     public Instant getRunAt() {
