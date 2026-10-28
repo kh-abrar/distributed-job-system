@@ -3,6 +3,7 @@ package com.system.api.controller;
 import com.system.api.service.IdempotencyConflictException;
 import com.system.api.service.InvalidJobRequestException;
 import com.system.api.service.JobNotFoundException;
+import com.system.api.service.JobStateConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(IdempotencyConflictException.class)
     ProblemDetail handleConflict(IdempotencyConflictException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(JobStateConflictException.class)
+    ProblemDetail handleStateConflict(JobStateConflictException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
     }
 

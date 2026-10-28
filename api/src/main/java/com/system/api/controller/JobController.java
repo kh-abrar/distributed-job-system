@@ -44,6 +44,11 @@ public class JobController {
                 .body(result.job());
     }
 
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<JobResponse> cancelJob(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(jobService.cancelJob(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<JobResponse> getJob(@PathVariable("id") UUID id) {
         JobResponse job = jobService.getJob(id);

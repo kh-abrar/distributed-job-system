@@ -10,6 +10,7 @@ import com.system.api.entity.JobEntity;
 import com.system.api.repository.JobRepository;
 import com.system.api.repository.JobSubmissionRepository;
 import com.system.api.repository.JobSubmissionRepository.ExistingSubmission;
+import com.system.api.repository.JobTransitionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final JobSubmissionRepository submissionRepository;
+    private final JobTransitionRepository transitionRepository;
     private final ObjectMapper objectMapper;
     private final JobsProperties properties;
 
@@ -32,10 +34,12 @@ public class JobService {
     public JobService(
             JobRepository jobRepository,
             JobSubmissionRepository submissionRepository,
+            JobTransitionRepository transitionRepository,
             ObjectMapper objectMapper,
             JobsProperties properties) {
         this.jobRepository = jobRepository;
         this.submissionRepository = submissionRepository;
+        this.transitionRepository = transitionRepository;
         this.objectMapper = objectMapper;
         this.properties = properties;
     }
@@ -105,6 +109,31 @@ public class JobService {
         JobEntity job = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
 
+        return JobResponse.from(job);
+    }
+
+    /**
+     * Cancels a PENDING job (FR-11). Running jobs (FR-12) and finished jobs (FR-13)
+     * are rejected.
+     *
+     * The guarded UPDATE decides; the read afterwards only picks the response.
+     * Checking the status first and updating second would let a worker claim the
+     * job in between.
+     *
+     * @throws JobNotFoundException       if no job exists with this id
+     * @throws JobStateConflictException  if the job is not PENDING
+     */
+    @Transactional
+    public JobResponse cancelJob(UUID id) {
+        boolean cancelled = transitionRepository.cancelIfPending(id);
+
+        // Nothing has loaded this job in the transaction yet, so this read sees the row after the UPDATE
+        JobEntity job = jobRepository.findById(id)
+                .orElseThrow(() -> new JobNotFoundException(id));
+        if (!cancelled) {
+            throw new JobStateConflictException(
+                    "Job " + id + " is " + job.getStatus() + "; only PENDING jobs can be cancelled");
+        }
         return JobResponse.from(job);
     }
 

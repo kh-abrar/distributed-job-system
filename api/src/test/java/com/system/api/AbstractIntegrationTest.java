@@ -77,6 +77,22 @@ public abstract class AbstractIntegrationTest {
         return postJob(body, null);
     }
 
+    /** Takes the id as a string so tests can also send malformed ids. */
+    protected HttpResponse<String> cancelJob(String id) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + "/api/jobs/" + id + "/cancel"))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        try {
+            return HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     protected JsonNode json(HttpResponse<String> response) {
         try {
             return mapper.readTree(response.body());
