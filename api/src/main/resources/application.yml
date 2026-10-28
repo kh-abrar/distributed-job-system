@@ -1,7 +1,8 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/jobs
+    # Matches the host port in docker-compose.yml; override with SPRING_DATASOURCE_URL
+    url: jdbc:postgresql://localhost:5433/jobs
     username: jobs
     password: jobs
 

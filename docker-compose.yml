@@ -6,7 +6,8 @@ services:
       POSTGRES_USER: jobs
       POSTGRES_PASSWORD: jobs
     ports:
-      - "5432:5432"
+      # Host port 5433 so a locally installed PostgreSQL on 5432 doesn't clash
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
