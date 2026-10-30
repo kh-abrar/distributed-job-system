@@ -9,6 +9,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    # Don't keep a Hibernate session open for the whole web request. Responses are
+    # built inside the service's transaction, so nothing needs it, and it would allow
+    # hidden database access after the service returns.
+    open-in-view: false
 
   # The api owns the schema; the scripts live in the common module so the worker's tests can use them too
   flyway:
