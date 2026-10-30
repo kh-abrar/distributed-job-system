@@ -34,6 +34,10 @@ Two findings the spec didn't anticipate:
   Windows 11 with Docker Desktop (WSL2 VM: 12 CPUs, 7.7 GB). The load generator,
   api, PostgreSQL 16 and workers all shared it. Absolute numbers hold for this
   machine; the comparisons (0 vs 4 workers, 1 vs 8, IO vs CPU) are what carry over.
+- **Software:** the experiments ran on Spring Boot 3.2 and Java 17. The project
+  has since moved to Spring Boot 4.1 and Java 21 ([ADR-007](decisions/ADR-007.md));
+  a back-to-back rerun of E2 showed no throughput difference (median 3,350 jobs/s
+  against 3,402, [results](../experiments/results/20261030T142910Z-throughput/)).
 - **Worker settings:** the spec's (Section 8): lease 30 s, heartbeat 10 s, reaper
   5 s, poll 0.5 s, claim batch 10, 4 handler threads per worker.
 - **Harness:** [`experiments/`](../experiments/). Each experiment is one script

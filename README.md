@@ -65,6 +65,17 @@ The experiments also found one assumption the spec didn't state: the database's
 own clock must not jump. On the test machine it did, and claims stalled for 15 s
 at a time until it was fixed.
 
+## Stack
+
+Java 21, Spring Boot 4.1, PostgreSQL 16, Flyway, Jackson 3, Testcontainers,
+Docker, GitHub Actions. Three Maven modules:
+
+- `common`: job types and the payload rules shared by the api and the worker
+- `api`: the REST service (Spring MVC, Spring Data JPA for reads, plain SQL for
+  every write); owns the schema and runs the migrations
+- `worker`: claims and runs jobs with plain JDBC; every write is a fenced SQL
+  statement ([ADR-005](docs/decisions/ADR-005.md))
+
 ## Running it
 
 You need Docker. This builds both services from source and starts PostgreSQL,
@@ -104,7 +115,7 @@ before exiting.
 
 ### Without Docker for the services
 
-You need Java 17 or newer and Maven 3.9. Start only the database, then each
+You need Java 21 or newer and Maven 3.9. Start only the database, then each
 service from its jar:
 
 ```bash

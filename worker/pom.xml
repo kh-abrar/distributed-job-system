@@ -44,13 +44,6 @@
             <artifactId>spring-boot-starter-jackson</artifactId>
         </dependency>
 
-        <!-- TEMPORARY, for the Spring Boot 4 upgrade: reports configuration properties
-             that were renamed or removed. Remove once the startup log is clean. -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-properties-migrator</artifactId>
-            <scope>runtime</scope>
-        </dependency>
 
         <!-- PostgreSQL -->
         <dependency>

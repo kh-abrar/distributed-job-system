@@ -28,7 +28,7 @@
         <!-- release, not just source/target: a newer JDK then also rejects APIs that
              this Java version doesn't have, so a local build can't pass where CI fails.
              When release is set, Maven ignores source and target; they stay for IDEs,
-             some of which (IntelliJ 2023.1) don't read maven.compiler.release on import. -->
+             some of which don't read maven.compiler.release when importing a project. -->
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
