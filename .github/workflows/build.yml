@@ -26,11 +26,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Java 17: what the code targets and what the Docker images run
+      # Java 21: what the code targets and what the Docker images run
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Build and run all tests
