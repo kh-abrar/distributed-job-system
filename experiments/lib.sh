@@ -17,10 +17,16 @@ host_path() {
     if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else echo "$1"; fi
 }
 
+# EXP_EXTRA_COMPOSE: optional extra override file (path from the repo root),
+# e.g. experiments/compose.pool-size.yml
 exp_compose() {
+    local extra=()
+    if [[ -n "${EXP_EXTRA_COMPOSE:-}" ]]; then
+        extra=(-f "$REPO_DIR/$EXP_EXTRA_COMPOSE")
+    fi
     docker compose -p "$PROJECT" \
         -f "$REPO_DIR/docker-compose.yml" \
-        -f "$EXP_DIR/compose.experiments.yml" "$@"
+        -f "$EXP_DIR/compose.experiments.yml" "${extra[@]}" "$@"
 }
 
 # Runs SQL against the experiment database; prints unaligned, tuple-only output.
@@ -84,9 +90,13 @@ scale_workers() {
     local count=$1
     shift
     log "Scaling workers to $count $*"
-    quietly env "$@" docker compose -p "$PROJECT" \
-        -f "$REPO_DIR/docker-compose.yml" -f "$EXP_DIR/compose.experiments.yml" \
-        up -d --no-deps --scale worker="$count" worker
+    # Exported in a subshell, so Compose can substitute them into the files
+    (
+        for setting in "$@"; do
+            export "${setting?}"
+        done
+        quietly exp_compose up -d --no-deps --scale worker="$count" worker
+    )
 }
 
 # Empties the job tables and the statement statistics, so each run starts clean
@@ -313,6 +323,7 @@ capture_env() {
         # Which build of the code ran: image ids change whenever the code does
         echo "api_image: $(docker image inspect -f '{{.Id}} built {{.Created}}' "${PROJECT}-api" 2>/dev/null | cut -c8-19,71-)"
         echo "worker_image: $(docker image inspect -f '{{.Id}} built {{.Created}}' "${PROJECT}-worker" 2>/dev/null | cut -c8-19,71-)"
+        echo "extra_compose: ${EXP_EXTRA_COMPOSE:-none}${WORKER_POOL_SIZE:+ (WORKER_POOL_SIZE=$WORKER_POOL_SIZE)}"
     } > "$out"
 }
 

@@ -1,0 +1,10 @@
+# Optional extra override: forces the workers' connection pool size, replacing the
+# worker's own sizing (worker.threads + 3). For comparing pool sizes:
+#   EXP_EXTRA_COMPOSE=experiments/compose.pool-size.yml WORKER_POOL_SIZE=10 experiments/run-e2-e3-throughput.sh e2
+# A separate file because Compose can't leave a variable unset when it's empty,
+# and an empty pool size would stop the worker from starting.
+
+services:
+  worker:
+    environment:
+      SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: ${WORKER_POOL_SIZE:?set WORKER_POOL_SIZE}

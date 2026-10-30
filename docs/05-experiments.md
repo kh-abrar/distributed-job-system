@@ -23,9 +23,10 @@ Two findings the spec didn't anticipate:
   that clock stepped backwards on the test machine, claims stalled for 15 s at a
   time. See [The clock fault](#the-clock-fault).
 - **Connections, not polling, set the first scaling limit.** With default
-  settings each worker holds up to 10 database connections, so a default
-  PostgreSQL (100 connections) runs out at about 9 workers. See
-  [Other findings](#other-findings).
+  settings each worker held up to 10 database connections, so a default
+  PostgreSQL (100 connections) ran out at about 9 workers. Since fixed: workers
+  now size their pool to what they use (7 by default), with no throughput cost.
+  See [Other findings](#other-findings).
 
 ## Setup
 
@@ -208,13 +209,17 @@ Evidence, kept with their own notes:
 
 ## Other findings
 
-- **Database connections.** Each worker's pool holds up to 10 connections
-  (HikariCP's default) and the api's another 10, so 8 workers plus the api need
+- **Database connections.** Each worker's pool held up to 10 connections
+  (HikariCP's default) and the api's another 10, so 8 workers plus the api needed
   90 of PostgreSQL's default 100. A throughput run failed with "too many clients"
   when the harness leaked a few extra sessions. The experiments raised
-  `max_connections` to 200; a real deployment would size worker pools to what a
-  worker uses (its handler threads plus poll, heartbeat and reaper, so about 7)
-  before adding workers.
+  `max_connections` to 200.
+  **Fixed since:** the worker now sizes its pool to what it can use at once,
+  `worker.threads + 3` (7 by default), so about 12 workers fit. A back-to-back A/B
+  test of E2 showed no cost: a median of 3,519 jobs/s with 7 connections against
+  3,464 with 10 ([results](../experiments/results/20261030T121902Z-throughput/)).
+  A first, separate rerun with 7 connections had come out 26% slower; the A/B
+  showed that was variation between sessions, not the pool.
 - **History size (Open Question 3).** `job_attempts` costs about 200-230 bytes per
   run including indexes. A million runs is about 200 MB, so retention is not
   urgent at this scale.

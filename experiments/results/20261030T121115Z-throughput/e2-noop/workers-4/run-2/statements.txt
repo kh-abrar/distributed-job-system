@@ -1,0 +1,14 @@
+ calls | total_ms | mean_ms  | rows  |                                         statement                                          
+-------+----------+----------+-------+--------------------------------------------------------------------------------------------
+ 60000 |  20442.2 |    0.341 | 60000 | WITH done AS ( UPDATE jobs SET status = $8, result = CAST($1 AS jsonb), locked_by = $9, le
+ 31749 |  13159.3 |    0.414 | 60000 | WITH next AS ( SELECT id FROM jobs WHERE status = 'PENDING' AND run_at <= now() AND attemp
+   131 |   2137.5 |   16.317 |   131 | SELECT count(*) FROM jobs WHERE status = $1
+     1 |   1348.9 | 1348.878 | 60000 | UPDATE jobs SET run_at = now() WHERE status = $1
+ 60000 |    549.6 |    0.009 | 60000 | SELECT $2 FROM ONLY "public"."jobs" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE O
+     1 |    121.4 |  121.414 |     1 | WITH finished AS ( SELECT a.started_at, a.finished_at FROM job_attempts a JOIN jobs j ON j
+    22 |     24.4 |    1.108 |     0 | WITH expired AS ( SELECT id, locked_by FROM jobs WHERE status = $2 AND lease_expires_at < 
+     1 |     13.4 |   13.435 |     1 | SELECT status, count(*) AS jobs FROM jobs GROUP BY status ORDER BY status
+    17 |     10.9 |    0.644 |     0 | UPDATE jobs SET lease_expires_at = now() + make_interval(secs => $1) WHERE id = $2 AND sta
+     1 |      9.8 |    9.844 |     1 | SELECT count(*) FROM jobs WHERE status IN ($1, $2)
+(10 rows)
+
