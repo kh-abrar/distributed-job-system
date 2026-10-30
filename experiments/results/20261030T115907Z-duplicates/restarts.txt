@@ -1,0 +1,2 @@
+jobs-exp-worker-1 restarts: 8
+jobs-exp-worker-2 restarts: 8

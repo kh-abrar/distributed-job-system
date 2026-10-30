@@ -33,6 +33,11 @@ services:
       WORKER_THREADS: ${WORKER_THREADS:-4}
       WORKER_CLAIM_BATCH_SIZE: ${WORKER_CLAIM_BATCH_SIZE:-10}
       WORKER_POLL_INTERVAL: ${WORKER_POLL_INTERVAL:-500ms}
+      # E6 only: worker.fault.crash-after-handler-probability
+      WORKER_FAULT_CRASHAFTERHANDLERPROBABILITY: ${WORKER_FAULT_CRASHAFTERHANDLERPROBABILITY:-0}
+    # E6 sets on-failure, so a worker that crashed on purpose comes back like a
+    # supervised process would. Off otherwise: E4 kills workers and restarts them itself.
+    restart: ${WORKER_RESTART:-no}
 
   api:
     # Different host port from the normal stack (8080). k6 itself calls the api

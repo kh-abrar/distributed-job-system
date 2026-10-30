@@ -23,16 +23,19 @@ exp_compose() {
         -f "$EXP_DIR/compose.experiments.yml" "$@"
 }
 
-# Runs SQL against the experiment database; prints unaligned, tuple-only output
+# Runs SQL against the experiment database; prints unaligned, tuple-only output.
+# -q drops command tags such as "INSERT 0 1", so INSERT ... RETURNING prints just the value.
+# Plain docker exec, not docker compose exec: Compose adds seconds per call on
+# Docker Desktop, which would skew anything timed around a query.
 psql_exp() {
-    exp_compose exec -T postgres psql -U jobs -d jobs -v ON_ERROR_STOP=1 -tA "$@"
+    docker exec -i "$PG_CONTAINER" psql -U jobs -d jobs -v ON_ERROR_STOP=1 -qtA "$@"
 }
 
 # psql_file SQL_FILE [psql options...]: runs a file of SQL, with normal table output
 psql_file() {
     local file=$1
     shift
-    exp_compose exec -T postgres psql -U jobs -d jobs -v ON_ERROR_STOP=1 "$@" -f - < "$file"
+    docker exec -i "$PG_CONTAINER" psql -U jobs -d jobs -v ON_ERROR_STOP=1 "$@" -f - < "$file"
 }
 
 # Runs a docker compose command quietly, but shows its output if it fails
@@ -52,8 +55,12 @@ log() {
 # The api runs the migrations; the function returns once it answers.
 start_stack() {
     log "Starting postgres and api (project $PROJECT)"
+    # Build both images from the current code. The worker image is built here too:
+    # workers are only started later (scale_workers), which doesn't rebuild, so
+    # without this they would keep running whatever code they were first built from.
+    quietly exp_compose build api worker
     # Naming only postgres and api leaves the workers off
-    quietly exp_compose up -d --build postgres api
+    quietly exp_compose up -d postgres api
     for _ in $(seq 1 90); do
         if exp_compose exec -T api true 2>/dev/null \
             && psql_exp -c "SELECT 1 FROM flyway_schema_history WHERE version = '3'" 2>/dev/null | grep -q 1; then
@@ -172,6 +179,35 @@ stop_sampler() {
                  WHERE application_name = 'throughput-sampler'" >/dev/null
 }
 
+# wait_for_count SQL TARGET TIMEOUT_S
+# Runs a count query every 0.2 s (one psql session, as in start_sampler) until it
+# reaches TARGET, then prints the host time (ns) of that first sample. Prints
+# nothing if TARGET isn't reached within TIMEOUT_S.
+wait_for_count() {
+    local sql=$1 target=$2 timeout_s=$3 hit=""
+    hit=$(printf '%s \\watch 0.2\n' "$sql" \
+        | timeout "$timeout_s" docker exec -i -e PGAPPNAME=count-watcher "$PG_CONTAINER" \
+            psql -U jobs -d jobs -tA 2>/dev/null \
+        | while IFS= read -r line; do
+            [[ "$line" =~ ^[0-9]+$ ]] || continue
+            if (( line >= target )); then
+                host_ns
+                break
+            fi
+        done) || true
+    psql_exp -c "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity
+                 WHERE application_name = 'count-watcher'" >/dev/null
+    echo "$hit"
+}
+
+# The worker container holding a job's lease. A worker id starts with its
+# container's hostname, which Docker sets to the short container id.
+owner_container() {
+    local job_id=$1 owner
+    owner=$(psql_exp -c "SELECT locked_by FROM jobs WHERE id = '$job_id' AND status = 'RUNNING'")
+    [[ -n "$owner" ]] && echo "${owner%%-*}"
+}
+
 # rates_from_samples SAMPLES_FILE TARGET GATE_NS
 # Prints "key: value" lines. Steady state: the time between the count crossing
 # 10% and 90% of TARGET, interpolated between samples. Overall: gate to last job.
@@ -268,8 +304,15 @@ capture_env() {
         echo "postgres: $(psql_exp -c 'SHOW server_version')"
         # Docker Desktop's VM clock can drift from the host's (e.g. after sleep).
         # Every measurement uses PostgreSQL's clock, so this is recorded, not corrected.
-        echo "clock_skew_seconds_db_minus_host: $(( $(psql_exp -c 'SELECT extract(epoch FROM now())::bigint') - $(date +%s) ))"
+        local db_epoch host_epoch_ns
+        db_epoch=$(psql_exp -c 'SELECT extract(epoch FROM clock_timestamp())')
+        host_epoch_ns=$(host_ns)
+        # The host is read just after the query returns, so this errs slightly negative
+        echo "clock_skew_seconds_db_minus_host: $(awk -v d="$db_epoch" -v h="$host_epoch_ns" 'BEGIN { printf "%.2f", d - h / 1e9 }')"
         echo "k6: $K6_IMAGE"
+        # Which build of the code ran: image ids change whenever the code does
+        echo "api_image: $(docker image inspect -f '{{.Id}} built {{.Created}}' "${PROJECT}-api" 2>/dev/null | cut -c8-19,71-)"
+        echo "worker_image: $(docker image inspect -f '{{.Id}} built {{.Created}}' "${PROJECT}-worker" 2>/dev/null | cut -c8-19,71-)"
     } > "$out"
 }
 
