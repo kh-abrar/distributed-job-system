@@ -37,12 +37,15 @@ public class JobRunner {
     private final HandlerRegistry handlers;
     private final RetryBackoff backoff;
     private final ObjectMapper objectMapper;
+    private final FaultInjector faults;
 
-    public JobRunner(JobStore store, HandlerRegistry handlers, RetryBackoff backoff, ObjectMapper objectMapper) {
+    public JobRunner(JobStore store, HandlerRegistry handlers, RetryBackoff backoff, ObjectMapper objectMapper,
+                     FaultInjector faults) {
         this.store = store;
         this.handlers = handlers;
         this.backoff = backoff;
         this.objectMapper = objectMapper;
+        this.faults = faults;
     }
 
     public RunOutcome run(ClaimedJob job) {
@@ -72,6 +75,9 @@ public class JobRunner {
         } catch (JsonProcessingException e) {
             return fail(job, describe(e));
         }
+
+        // Experiments only (E6): the one moment where a crash loses a finished result
+        faults.maybeCrashAfterHandler(job);
 
         if (!store.complete(job, resultJson)) {
             log.warn("Job {} attempt {} finished, but this worker no longer owns it; result discarded",

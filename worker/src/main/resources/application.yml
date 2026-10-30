@@ -25,3 +25,6 @@ worker:
   backoff:
     base: 2s
     max: 60s
+  # Deliberate failures for the Phase 5 experiments. Leave at 0.
+  fault:
+    crash-after-handler-probability: 0

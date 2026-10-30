@@ -19,6 +19,7 @@ import java.time.Duration;
  * @param reaperBatchSize   most jobs one reaper statement recovers
  * @param shutdownGrace     how long shutdown waits for running jobs before interrupting them
  * @param backoff           delay after a failed attempt, and after a failed poll
+ * @param fault             deliberate failures for experiments; all off by default
  */
 @ConfigurationProperties(prefix = "worker")
 public record WorkerProperties(
@@ -32,7 +33,8 @@ public record WorkerProperties(
         Duration reaperInterval,
         int reaperBatchSize,
         Duration shutdownGrace,
-        Backoff backoff) {
+        Backoff backoff,
+        Fault fault) {
 
     public WorkerProperties {
         requirePositive("threads", threads);
@@ -52,6 +54,9 @@ public record WorkerProperties(
         if (backoff == null) {
             throw new IllegalArgumentException("worker.backoff.base and worker.backoff.max are required");
         }
+        if (fault == null) {
+            fault = new Fault(0.0);
+        }
     }
 
     /** Retry delay: exponential from base, capped at max. */
@@ -60,6 +65,24 @@ public record WorkerProperties(
         public Backoff {
             requirePositive("backoff.base", base);
             requirePositive("backoff.max", max);
+        }
+    }
+
+    /**
+     * Deliberate failures, for the Phase 5 experiments (E6). Never set these in
+     * normal use.
+     *
+     * @param crashAfterHandlerProbability chance, from 0 to 1, that the worker exits
+     *                                     after a handler succeeds but before the result
+     *                                     is recorded (spec section 7, row 3)
+     */
+    public record Fault(double crashAfterHandlerProbability) {
+
+        public Fault {
+            if (crashAfterHandlerProbability < 0 || crashAfterHandlerProbability > 1) {
+                throw new IllegalArgumentException(
+                        "worker.fault.crash-after-handler-probability must be between 0 and 1");
+            }
         }
     }
 

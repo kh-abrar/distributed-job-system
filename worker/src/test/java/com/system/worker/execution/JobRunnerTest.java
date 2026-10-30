@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.common.enums.JobType;
 import com.system.worker.AbstractWorkerIntegrationTest;
+import com.system.worker.config.WorkerProperties;
 import com.system.worker.handler.CpuHandler;
 import com.system.worker.handler.FlakyHandler;
 import com.system.worker.handler.HandlerRegistry;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * How a handler's result or exception becomes a fenced complete or fail
@@ -42,10 +44,27 @@ class JobRunnerTest extends AbstractWorkerIntegrationTest {
     @Autowired
     private JobRunner springRunner;
 
+    @Autowired
+    private WorkerProperties properties;
+
     /** A runner whose IO jobs are handled by the given test handler. */
     private JobRunner runnerWithIoHandler(JobHandler ioHandler) {
+        return runnerWithIoHandler(ioHandler, FaultInjector.disabled());
+    }
+
+    private JobRunner runnerWithIoHandler(JobHandler ioHandler, FaultInjector faults) {
         HandlerRegistry registry = new HandlerRegistry(List.of(new CpuHandler(), new FlakyHandler(), ioHandler));
-        return new JobRunner(store, registry, TEN_SECONDS, objectMapper);
+        return new JobRunner(store, registry, TEN_SECONDS, objectMapper, faults);
+    }
+
+    /** Stands in for Runtime.halt, so the test JVM survives the "crash". */
+    private static final class SimulatedCrash extends RuntimeException {
+    }
+
+    private static FaultInjector alwaysCrashes() {
+        return new FaultInjector(1.0, () -> 0.0, () -> {
+            throw new SimulatedCrash();
+        });
     }
 
     private static JobHandler ioHandler(ThrowingHandle body) {
@@ -185,6 +204,46 @@ class JobRunnerTest extends AbstractWorkerIntegrationTest {
                 .containsEntry("status", "RUNNING").containsEntry("attempts", 1).containsEntry("last_error", null);
         assertThat(jdbc.queryForObject("SELECT outcome FROM job_attempts WHERE job_id = ?",
                 String.class, job.jobId())).isNull();
+    }
+
+    /**
+     * E6's fault (spec section 7, row 3): the handler finished, then the worker
+     * "crashed" before recording the result. Nothing may have been written, so the
+     * job stays RUNNING and the reaper will hand it to another worker: a duplicate run.
+     */
+    @Test
+    void injectedCrashHappensAfterTheHandlerAndBeforeTheResultIsRecorded() {
+        ClaimedJob job = claim("{}");
+        boolean[] handlerFinished = new boolean[1];
+        JobRunner runner = runnerWithIoHandler(ioHandler(ctx -> {
+            handlerFinished[0] = true;
+            return objectMapper.createObjectNode().put("done", true);
+        }), alwaysCrashes());
+
+        assertThatThrownBy(() -> runner.run(job)).isInstanceOf(SimulatedCrash.class);
+
+        assertThat(handlerFinished[0]).isTrue();
+        assertThat(jdbc.queryForMap("SELECT status, result FROM jobs WHERE id = ?", job.jobId()))
+                .containsEntry("status", "RUNNING").containsEntry("result", null);
+        assertThat(jdbc.queryForObject("SELECT outcome FROM job_attempts WHERE job_id = ?",
+                String.class, job.jobId())).isNull();
+    }
+
+    /** The fault is about losing a finished result, so a failing handler never triggers it. */
+    @Test
+    void injectedCrashNeverFiresWhenTheHandlerFails() {
+        ClaimedJob job = claim("{}");
+        JobRunner runner = runnerWithIoHandler(ioHandler(ctx -> {
+            throw new JobFailedException("boom");
+        }), alwaysCrashes());
+
+        assertThat(runner.run(job)).isEqualTo(RunOutcome.RETRY_SCHEDULED);
+    }
+
+    /** Off by default: nothing in application.yml may leave the fault switched on. */
+    @Test
+    void faultInjectionIsOffByDefault() {
+        assertThat(properties.fault().crashAfterHandlerProbability()).isZero();
     }
 
     /** The runner Spring builds, with the real handlers, runs a real IO job end to end. */
