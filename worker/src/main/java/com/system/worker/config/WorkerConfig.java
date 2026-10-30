@@ -4,6 +4,7 @@ import com.system.worker.store.RetryBackoff;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -12,6 +13,12 @@ import java.util.UUID;
 @Configuration
 @EnableConfigurationProperties(WorkerProperties.class)
 public class WorkerConfig {
+
+    /** Static: a BeanPostProcessor must exist before the beans it processes. */
+    @Bean
+    static WorkerPoolSizer workerPoolSizer(Environment environment) {
+        return new WorkerPoolSizer(environment);
+    }
 
     @Bean
     RetryBackoff retryBackoff(WorkerProperties properties) {
