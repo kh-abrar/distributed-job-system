@@ -1,5 +1,7 @@
 # Distributed Job Processing System
 
+[![build](https://github.com/kh-abrar/distributed-job-system/actions/workflows/build.yml/badge.svg)](https://github.com/kh-abrar/distributed-job-system/actions/workflows/build.yml)
+
 A small job queue built to study the hard parts of distributed work: leases,
 fencing, retries, idempotent submission and recovery from crashed workers.
 Clients submit jobs over a REST API, PostgreSQL is the source of truth, and a
@@ -47,7 +49,7 @@ the job id, generation and attempt so they can detect repeats.
 
 ## Results
 
-Measured on one laptop (Ryzen 5 5600G, Docker Desktop) with the spec's settings.
+Measured on one desktop PC (Ryzen 5 5600G, 16 GB RAM, Docker Desktop) with the spec's settings.
 Method, raw data and caveats: [docs/05-experiments.md](docs/05-experiments.md).
 
 | What | Spec's guess | Measured |
@@ -180,7 +182,8 @@ mvn verify
 ```
 
 The integration tests start their own PostgreSQL 16 container through
-Testcontainers, so Docker must be running. They don't touch the compose
+Testcontainers, so Docker must be running. GitHub Actions runs the same build on
+every push ([.github/workflows/build.yml](.github/workflows/build.yml)). They don't touch the compose
 database. Among other things they cover:
 
 - concurrent submissions with one idempotency key creating one job

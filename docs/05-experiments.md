@@ -30,7 +30,7 @@ Two findings the spec didn't anticipate:
 
 ## Setup
 
-- **Machine:** one laptop. AMD Ryzen 5 5600G (6 cores, 12 threads), 16 GB RAM,
+- **Machine:** one desktop PC. AMD Ryzen 5 5600G (6 cores, 12 threads), 16 GB RAM,
   Windows 11 with Docker Desktop (WSL2 VM: 12 CPUs, 7.7 GB). The load generator,
   api, PostgreSQL 16 and workers all shared it. Absolute numbers hold for this
   machine; the comparisons (0 vs 4 workers, 1 vs 8, IO vs CPU) are what carry over.

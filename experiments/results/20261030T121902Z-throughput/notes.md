@@ -18,7 +18,7 @@ each for the poll loop, the heartbeat and the reaper.
 
 An earlier session with pool 7 (20261030T121115Z-throughput) gave a median of
 2,581 jobs/s, 26% below the original baseline of 3,477. The A/B shows that was
-variation between sessions on this laptop, not the pool: its median is below every
+variation between sessions on this machine, not the pool: its median is below every
 one of the six runs here. It's kept as a reminder that comparisons need to run back
 to back.
 
