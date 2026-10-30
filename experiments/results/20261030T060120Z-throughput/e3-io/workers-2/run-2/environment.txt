@@ -1,0 +1,11 @@
+date_utc: 2026-10-30T06:12:50Z
+git_commit: 2dd31e3
+git_dirty: yes
+docker: cpus=12 memory_bytes=8249327616 os=Docker Desktop kernel=5.15.167.4-microsoft-standard-WSL2
+host_cpu: AMD Ryzen 5 5600G with Radeon Graphics         
+host_memory_bytes: 17019961344
+postgres: 16.15 (Debian 16.15-1.pgdg13+2)
+clock_skew_seconds_db_minus_host: 319
+k6: grafana/k6:1.0.0
+workers: 2
+jobs: 2400 IO {"sleepMs":100}

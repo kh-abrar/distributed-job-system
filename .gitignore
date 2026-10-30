@@ -8,3 +8,6 @@ out/
 
 # Local environment
 .env
+
+# Harness smoke-test output (real experiment results are committed)
+experiments/results/*-smoke/

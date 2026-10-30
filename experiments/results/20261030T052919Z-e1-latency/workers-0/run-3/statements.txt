@@ -1,0 +1,9 @@
+ calls | total_ms | mean_ms | rows  |                                         statement                                          
+-------+----------+---------+-------+--------------------------------------------------------------------------------------------
+ 30002 |   4048.4 |   0.135 | 30002 | INSERT INTO jobs (idempotency_key, type, payload, max_attempts) VALUES ($1, $2, CAST($3 AS
+ 30002 |    657.0 |   0.022 | 30002 | select je1_0.id,je1_0.attempts,je1_0.created_at,je1_0.generation,je1_0.idempotency_key,je1
+     1 |      0.1 |   0.105 |     1 | SELECT pg_stat_statements_reset()
+     1 |      0.0 |   0.042 |     1 | SELECT extract($1 FROM now())::bigint
+     1 |      0.0 |   0.007 |     0 | SHOW server_version
+(5 rows)
+

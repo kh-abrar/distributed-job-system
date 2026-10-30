@@ -1,0 +1,8 @@
+succeeded_jobs: 9600
+not_succeeded_jobs: 0
+overall_seconds: 32.98
+overall_jobs_per_second: 291.1
+steady_state_jobs_per_second: 290.1
+mean_job_ms: -959.9
+claim_statements: 8894
+jobs_per_claim: 1.08

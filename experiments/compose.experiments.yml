@@ -1,0 +1,41 @@
+# Overrides for the Phase 5 experiments. Used together with the main file:
+#   docker compose -p jobs-exp -f docker-compose.yml -f experiments/compose.experiments.yml ...
+# (experiments/lib.sh does this for you.)
+#
+# The separate project name (jobs-exp) gives the experiments their own containers
+# and their own volume, so the normal stack and its data are never touched.
+
+services:
+  postgres:
+    # pg_stat_statements records how often each statement runs and how long it takes,
+    # which shows where the bottleneck is (spec Open Question 5)
+    #
+    # max_connections: each worker's pool holds up to 10 connections (HikariCP's
+    # default) and the api's another 10, so 8 workers plus the api already need 90
+    # of PostgreSQL's default 100. Raised so the 8-worker runs fit, with room for
+    # the harness's own sessions. A finding in itself: see the experiments write-up.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - max_connections=200
+    # Different host port from the normal stack (5433)
+    ports: !override
+      - "5434:5432"
+
+  worker:
+    # Compose only passes variables listed here, so experiment scripts can vary
+    # these per run (scale_workers in lib.sh). Defaults match application.yml.
+    environment:
+      WORKER_THREADS: ${WORKER_THREADS:-4}
+      WORKER_CLAIM_BATCH_SIZE: ${WORKER_CLAIM_BATCH_SIZE:-10}
+      WORKER_POLL_INTERVAL: ${WORKER_POLL_INTERVAL:-500ms}
+
+  api:
+    # Different host port from the normal stack (8080). k6 itself calls the api
+    # inside the Docker network, so this is only for looking around by hand.
+    ports: !override
+      - "8081:8080"

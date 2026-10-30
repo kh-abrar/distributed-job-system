@@ -1,0 +1,10 @@
+rate_per_second: 200
+measured_duration: 2m
+warmup: 30s
+requests_measured: 24001
+latency_ms_p50: 2.18
+latency_ms_p95: 3.70
+latency_ms_p99: 4.75
+latency_ms_max: 319555.53
+error_rate: 0.000041664930627890504
+dropped_iterations: 17

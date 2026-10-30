@@ -1,0 +1,6 @@
+  table_name  | rows | total_bytes | bytes_per_row 
+--------------+------+-------------+---------------
+ job_attempts | 2400 |      606208 |           253
+ jobs         | 2400 |     1736704 |           724
+(2 rows)
+

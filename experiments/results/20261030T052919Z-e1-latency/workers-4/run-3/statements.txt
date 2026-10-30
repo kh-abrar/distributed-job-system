@@ -1,0 +1,14 @@
+ calls | total_ms | mean_ms | rows  |                                         statement                                          
+-------+----------+---------+-------+--------------------------------------------------------------------------------------------
+ 30001 |   5640.6 |   0.188 | 30001 | WITH done AS ( UPDATE jobs SET status = $8, result = CAST($1 AS jsonb), locked_by = $9, le
+ 15653 |   4190.6 |   0.268 | 30001 | WITH next AS ( SELECT id FROM jobs WHERE status = $5 AND run_at <= now() AND attempts < ma
+ 30001 |   3579.5 |   0.119 | 30001 | INSERT INTO jobs (idempotency_key, type, payload, max_attempts) VALUES ($1, $2, CAST($3 AS
+ 30001 |    635.9 |   0.021 | 30001 | select je1_0.id,je1_0.attempts,je1_0.created_at,je1_0.generation,je1_0.idempotency_key,je1
+ 30001 |    158.1 |   0.005 | 30001 | SELECT $2 FROM ONLY "public"."jobs" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE O
+   132 |     15.1 |   0.115 |     0 | WITH expired AS ( SELECT id, locked_by FROM jobs WHERE status = $2 AND lease_expires_at < 
+    40 |      0.7 |   0.017 |     0 | SET extra_float_digits = 3
+    40 |      0.4 |   0.010 |     0 | SET application_name = 'PostgreSQL JDBC Driver'
+     1 |      0.1 |   0.106 |     1 | SELECT pg_stat_statements_reset()
+     1 |      0.1 |   0.086 |     1 | SELECT extract($1 FROM now())::bigint
+(10 rows)
+

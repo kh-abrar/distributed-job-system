@@ -1,0 +1,11 @@
+samples: 169
+all_succeeded: yes
+overall_seconds: 26.59
+overall_jobs_per_second: 90.2
+steady_state_jobs_per_second: 91.5
+succeeded_jobs: 2400
+not_succeeded_jobs: 0
+mean_job_ms: 42.1
+implausible_duration_rows: 0
+claim_statements: 2398
+jobs_per_claim: 1.00

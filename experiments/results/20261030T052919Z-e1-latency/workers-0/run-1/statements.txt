@@ -1,0 +1,13 @@
+ calls | total_ms | mean_ms | rows  |                                         statement                                          
+-------+----------+---------+-------+--------------------------------------------------------------------------------------------
+ 29984 |   4287.3 |   0.143 | 29984 | INSERT INTO jobs (idempotency_key, type, payload, max_attempts) VALUES ($1, $2, CAST($3 AS
+ 29984 |    714.1 |   0.024 | 29984 | select je1_0.id,je1_0.attempts,je1_0.created_at,je1_0.generation,je1_0.idempotency_key,je1
+     9 |      0.6 |   0.070 |     9 | SELECT typinput=$2::regproc as is_array, typtype, typname, pg_type.oid FROM pg_catalog.pg_
+     9 |      0.2 |   0.026 |     9 | SELECT n.nspname = ANY(current_schemas($2)), n.nspname, t.typname FROM pg_catalog.pg_type 
+     1 |      0.1 |   0.135 |     1 | SELECT pg_stat_statements_reset()
+     1 |      0.1 |   0.082 |     1 | SELECT extract($1 FROM now())::bigint
+    50 |      0.0 |   0.001 |     0 | BEGIN
+     8 |      0.0 |   0.001 |     0 | COMMIT
+     1 |      0.0 |   0.005 |     0 | SHOW server_version
+(9 rows)
+
