@@ -1,0 +1,10 @@
+ succeeded_jobs | overall_seconds | overall_jobs_per_second | steady_state_jobs_per_second 
+----------------+-----------------+-------------------------+------------------------------
+          60000 |          18.473 |                  3248.0 |                       3364.1
+(1 row)
+
+  status   | jobs  
+-----------+-------
+ SUCCEEDED | 60000
+(1 row)
+
