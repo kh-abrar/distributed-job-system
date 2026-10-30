@@ -1,0 +1,47 @@
+# Builds everything and runs every test on each push and pull request.
+# The integration tests start PostgreSQL 16 with Testcontainers, using the Docker
+# that GitHub's Ubuntu runners come with.
+
+name: build
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch cancels a run still in progress
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java 17: what the code targets and what the Docker images run
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build and run all tests
+        run: mvn -B verify
+
+      # Catches a broken Dockerfile or compose file, not only broken Java
+      - name: Build the Docker images
+        run: docker compose build
+
+      - name: Keep the test reports if something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/target/surefire-reports/'
+          retention-days: 7
