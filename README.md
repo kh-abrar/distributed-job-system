@@ -21,7 +21,7 @@ spec's open questions or differs from it, the ADRs say so (see
 | Cancel a pending job | FR-11 to FR-13 | Done, tested |
 | Manually requeue a dead job | FR-27 | Done, tested |
 | Worker: claim, lease, heartbeat, fencing, retry, reaper | FR-14 to FR-26, G2, G3, G5, G6 | Done, tested |
-| Load and failure experiments | Phase 5 | Not started |
+| Load and failure experiments | Phase 5 | Done ([results](docs/05-experiments.md)) |
 
 ## How it works
 
@@ -44,6 +44,24 @@ spec's open questions or differs from it, the ADRs say so (see
 Execution is at-least-once: a job can run more than once, for example when a
 worker crashes after finishing a job but before recording it. Handlers receive
 the job id, generation and attempt so they can detect repeats.
+
+## Results
+
+Measured on one laptop (Ryzen 5 5600G, Docker Desktop) with the spec's settings.
+Method, raw data and caveats: [docs/05-experiments.md](docs/05-experiments.md).
+
+| What | Spec's guess | Measured |
+|---|---|---|
+| Submission latency at 200 requests/s | p95 under 50 ms | p95 **3.6 ms** |
+| Throughput, 4 workers, near no-op jobs | at least 500 jobs/s | **3,477 jobs/s** |
+| Recovery after a worker is killed mid-job | about 40 s | median **27.9 s** (all within lease + reaper interval) |
+| Scaling, 1 to 8 workers | improves until a bottleneck | IO jobs: near-linear. CPU jobs: limited by the 6 CPU cores |
+| A frozen worker wakes up and tries to write | rejected | rejected in **10 of 10** trials |
+| Crash after a job finishes, before it's recorded | the job runs again | **16 of 16** duplicates, **400 of 400** jobs still done |
+
+The experiments also found one assumption the spec didn't state: the database's
+own clock must not jump. On the test machine it did, and claims stalled for 15 s
+at a time until it was fixed.
 
 ## Running it
 
