@@ -18,4 +18,15 @@
 
     <name>Common Domain Models</name>
 
+    <dependencies>
+
+        <!-- JsonNode, for the job payload rules shared by the api and the worker.
+             Tested through both: the api's submission tests and the worker's handler tests. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+    </dependencies>
+
 </project>

@@ -3,6 +3,8 @@ package com.system.worker.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.system.common.enums.JobType;
+import com.system.common.payload.InvalidPayloadException;
+import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
@@ -21,8 +23,6 @@ import java.util.HexFormat;
 @Component
 public class CpuHandler implements JobHandler {
 
-    private static final long DEFAULT_ITERATIONS = 100_000;
-    private static final long MAX_ITERATIONS = 100_000_000;
     // How often to check for interruption; checking every iteration costs more than the hash
     private static final int INTERRUPT_CHECK_EVERY = 10_000;
 
@@ -33,8 +33,15 @@ public class CpuHandler implements JobHandler {
 
     @Override
     public JsonNode handle(JobContext context) throws JobFailedException, InterruptedException {
-        long iterations = Payloads.integer(context.payload(), "iterations", DEFAULT_ITERATIONS, 1, MAX_ITERATIONS);
-        long seed = Payloads.integer(context.payload(), "seed", 0, Long.MIN_VALUE, Long.MAX_VALUE);
+        long iterations;
+        long seed;
+        try {
+            iterations = JobPayloads.cpuIterations(context.payload());
+            seed = JobPayloads.cpuSeed(context.payload());
+        } catch (InvalidPayloadException e) {
+            // The api rejects these at submission; this covers jobs that reached the table another way
+            throw new JobFailedException(e.getMessage());
+        }
 
         MessageDigest sha256 = sha256();
         byte[] digest = sha256.digest(ByteBuffer.allocate(Long.BYTES).putLong(seed).array());

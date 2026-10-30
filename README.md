@@ -167,8 +167,11 @@ curl "http://localhost:8080/api/jobs?status=PENDING&limit=20"
 | `IO` | `sleepMs` (0 to 600,000, default 1,000) | `{"sleptMs"}` |
 | `FLAKY` | `succeedOnAttempt` (fails every attempt before it) and/or `failProbability` (0 to 1). Neither: fails half the time | `{"attempt"}` |
 
-A payload parameter of the wrong type or out of range fails the attempt with an
-`Invalid payload` error, like any other failure.
+A parameter of the wrong type or out of range is rejected at submission with a
+`400` (`Invalid payload: ...`). The api and the worker share these rules
+([`JobPayloads`](common/src/main/java/com/system/common/payload/JobPayloads.java)),
+so a job that was accepted can't fail for a bad parameter. Fields a job type
+doesn't read are allowed, up to the 64 KB payload limit.
 
 ## Tests
 

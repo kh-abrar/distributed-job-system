@@ -14,6 +14,9 @@ import com.system.api.repository.JobSubmissionRepository;
 import com.system.api.repository.JobSubmissionRepository.ExistingSubmission;
 import com.system.api.repository.JobTransitionRepository;
 import com.system.common.enums.JobStatus;
+import com.system.common.enums.JobType;
+import com.system.common.payload.InvalidPayloadException;
+import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,7 +77,7 @@ public class JobService {
         if (request.type() == null) {
             throw new InvalidJobRequestException("Job type is required");
         }
-        String payloadJson = validatedPayload(request.payload());
+        String payloadJson = validatedPayload(request.type(), request.payload());
         int maxAttempts = resolvedMaxAttempts(request.maxAttempts());
         String key = validatedKey(idempotencyKey);
 
@@ -196,13 +199,22 @@ public class JobService {
     }
 
     /**
-     * Checks the payload is a JSON object within the size limit and returns it serialized.
-     * The size is measured on the serialized form because that is what gets stored.
+     * Checks the payload is a JSON object within the size limit, with valid
+     * parameters for its job type, and returns it serialized. The size is measured on
+     * the serialized form because that is what gets stored.
+     *
+     * The parameter rules are the handlers' own (JobPayloads in the common module), so
+     * a job accepted here can't fail in the worker for having a bad parameter.
      */
-    private String validatedPayload(JsonNode payload) {
+    private String validatedPayload(JobType type, JsonNode payload) {
         // JSON null arrives as a NullNode, which isObject() also rejects
         if (payload == null || !payload.isObject()) {
             throw new InvalidJobRequestException("Job payload must be a JSON object");
+        }
+        try {
+            JobPayloads.validate(type, payload);
+        } catch (InvalidPayloadException e) {
+            throw new InvalidJobRequestException(e.getMessage());
         }
         byte[] bytes;
         try {

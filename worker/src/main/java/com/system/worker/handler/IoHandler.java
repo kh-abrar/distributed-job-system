@@ -3,6 +3,8 @@ package com.system.worker.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.system.common.enums.JobType;
+import com.system.common.payload.InvalidPayloadException;
+import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,9 +16,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class IoHandler implements JobHandler {
 
-    private static final long DEFAULT_SLEEP_MS = 1_000;
-    private static final long MAX_SLEEP_MS = 600_000;
-
     @Override
     public JobType type() {
         return JobType.IO;
@@ -24,7 +23,13 @@ public class IoHandler implements JobHandler {
 
     @Override
     public JsonNode handle(JobContext context) throws JobFailedException, InterruptedException {
-        long sleepMs = Payloads.integer(context.payload(), "sleepMs", DEFAULT_SLEEP_MS, 0, MAX_SLEEP_MS);
+        long sleepMs;
+        try {
+            sleepMs = JobPayloads.ioSleepMs(context.payload());
+        } catch (InvalidPayloadException e) {
+            // The api rejects these at submission; this covers jobs that reached the table another way
+            throw new JobFailedException(e.getMessage());
+        }
 
         // Throws InterruptedException if the worker interrupts the run
         Thread.sleep(sleepMs);

@@ -3,6 +3,8 @@ package com.system.worker.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.system.common.enums.JobType;
+import com.system.common.payload.InvalidPayloadException;
+import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,8 +25,6 @@ import java.util.function.DoubleSupplier;
 @Component
 public class FlakyHandler implements JobHandler {
 
-    private static final double DEFAULT_FAIL_PROBABILITY = 0.5;
-
     private final DoubleSupplier random;
 
     public FlakyHandler() {
@@ -43,12 +43,16 @@ public class FlakyHandler implements JobHandler {
 
     @Override
     public JsonNode handle(JobContext context) throws JobFailedException {
-        // Validate everything first, so a bad payload fails the same way on every attempt
-        Long succeedOnAttempt = Payloads.optionalInteger(context.payload(), "succeedOnAttempt", 1, Integer.MAX_VALUE);
-        Double requestedProbability = Payloads.optionalNumber(context.payload(), "failProbability", 0.0, 1.0);
-        double failProbability = requestedProbability != null
-                ? requestedProbability
-                : succeedOnAttempt == null ? DEFAULT_FAIL_PROBABILITY : 0.0;
+        // Read everything first, so a bad payload fails the same way on every attempt
+        Long succeedOnAttempt;
+        double failProbability;
+        try {
+            succeedOnAttempt = JobPayloads.flakySucceedOnAttempt(context.payload());
+            failProbability = JobPayloads.flakyFailProbability(context.payload());
+        } catch (InvalidPayloadException e) {
+            // The api rejects these at submission; this covers jobs that reached the table another way
+            throw new JobFailedException(e.getMessage());
+        }
 
         if (succeedOnAttempt != null && context.attempt() < succeedOnAttempt) {
             throw new JobFailedException("Planned failure on attempt " + context.attempt()
