@@ -34,6 +34,11 @@
         <!-- Spring Boot 3.2 pins Flyway 9.22, which predates PostgreSQL 16 and warns at
              startup. 10.10.0 is the version Spring Boot moved to in its next release (3.3). -->
         <flyway.version>10.10.0</flyway.version>
+        <!-- Spring Boot 3.2 pins Testcontainers 1.19.7, which talks to Docker with API
+             version 1.32. Newer Docker Engines refuse anything below 1.40, so the tests
+             failed on GitHub's runners ("client version 1.32 is too old") while passing
+             on Docker 27 locally. 1.21.4 works with recent Docker Engines. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <!-- Dependency Version Management -->
@@ -53,6 +58,16 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+
+            <!-- Testcontainers, also ahead of Spring Boot's list, for the same reason.
+                 Its own dependency list keeps every Testcontainers module on one version. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Spring Boot dependency versions -->
