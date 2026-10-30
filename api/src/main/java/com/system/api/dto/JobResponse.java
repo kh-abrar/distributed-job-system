@@ -1,9 +1,9 @@
 package com.system.api.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.system.api.entity.JobEntity;
 import com.system.common.enums.JobStatus;
 import com.system.common.enums.JobType;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.UUID;

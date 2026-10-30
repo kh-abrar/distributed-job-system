@@ -1,7 +1,5 @@
 package com.system.worker.execution;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.common.enums.JobType;
 import com.system.worker.AbstractWorkerIntegrationTest;
 import com.system.worker.config.WorkerProperties;
@@ -16,6 +14,8 @@ import com.system.worker.store.JobStore;
 import com.system.worker.store.RetryBackoff;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.List;

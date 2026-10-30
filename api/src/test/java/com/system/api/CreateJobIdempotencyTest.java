@@ -52,8 +52,8 @@ class CreateJobIdempotencyTest extends AbstractIntegrationTest {
             assertThat(responses).extracting(HttpResponse::statusCode)
                     .containsOnly(201, 200);
             assertThat(responses).filteredOn(r -> r.statusCode() == 201).hasSize(1);
-            assertThat(responses).extracting(r -> json(r).path("id").asText())
-                    .containsOnly(json(responses.get(0)).path("id").asText());
+            assertThat(responses).extracting(r -> json(r).path("id").asString())
+                    .containsOnly(json(responses.get(0)).path("id").asString());
             assertThat(jobCount()).isEqualTo(1);
         } finally {
             pool.shutdownNow();
@@ -147,7 +147,7 @@ class CreateJobIdempotencyTest extends AbstractIntegrationTest {
         String key = "fr5-" + terminalStatus;
         HttpResponse<String> created = postJob(BODY, key);
         assertThat(created.statusCode()).isEqualTo(201);
-        UUID id = UUID.fromString(json(created).path("id").asText());
+        UUID id = UUID.fromString(json(created).path("id").asString());
 
         // Test fixture: move the job straight to a terminal state, respecting the V2 CHECKs
         jdbc.update("""
@@ -162,8 +162,8 @@ class CreateJobIdempotencyTest extends AbstractIntegrationTest {
         HttpResponse<String> repeat = postJob(BODY, key);
 
         assertThat(repeat.statusCode()).isEqualTo(200);
-        assertThat(json(repeat).path("id").asText()).isEqualTo(id.toString());
-        assertThat(json(repeat).path("status").asText()).isEqualTo(terminalStatus);
+        assertThat(json(repeat).path("id").asString()).isEqualTo(id.toString());
+        assertThat(json(repeat).path("status").asString()).isEqualTo(terminalStatus);
         assertThat(jobRow(id)).isEqualTo(before);
         assertThat(jobCount()).isEqualTo(1);
     }

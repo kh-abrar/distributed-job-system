@@ -1,9 +1,9 @@
 package com.system.worker.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.databind.JsonNode;
 
 import static com.system.worker.handler.HandlerTestSupport.context;
 import static com.system.worker.handler.HandlerTestSupport.interruptWhileRunning;

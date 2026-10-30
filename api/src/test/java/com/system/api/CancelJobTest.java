@@ -24,7 +24,7 @@ class CancelJobTest extends AbstractIntegrationTest {
     private UUID createPendingJob() {
         HttpResponse<String> created = postJob("{\"type\":\"IO\",\"payload\":{}}");
         assertThat(created.statusCode()).isEqualTo(201);
-        return UUID.fromString(json(created).path("id").asText());
+        return UUID.fromString(json(created).path("id").asString());
     }
 
     private String statusOf(UUID id) {
@@ -43,8 +43,8 @@ class CancelJobTest extends AbstractIntegrationTest {
         HttpResponse<String> response = cancelJob(id.toString());
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(json(response).path("id").asText()).isEqualTo(id.toString());
-        assertThat(json(response).path("status").asText()).isEqualTo("CANCELLED");
+        assertThat(json(response).path("id").asString()).isEqualTo(id.toString());
+        assertThat(json(response).path("status").asString()).isEqualTo("CANCELLED");
         assertThat(statusOf(id)).isEqualTo("CANCELLED");
     }
 

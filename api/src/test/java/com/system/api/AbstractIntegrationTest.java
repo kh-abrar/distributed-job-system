@@ -1,14 +1,14 @@
 package com.system.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -29,7 +29,7 @@ import java.net.http.HttpResponse;
 public abstract class AbstractIntegrationTest {
 
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16");
 
     static {
         POSTGRES.start();
@@ -131,12 +131,9 @@ public abstract class AbstractIntegrationTest {
         }
     }
 
+    /** Jackson 3 exceptions are unchecked, so a malformed body fails the test directly. */
     protected JsonNode json(HttpResponse<String> response) {
-        try {
-            return mapper.readTree(response.body());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return mapper.readTree(response.body());
     }
 
     protected int jobCount() {

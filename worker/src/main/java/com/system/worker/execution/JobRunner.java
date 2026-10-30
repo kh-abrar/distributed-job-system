@@ -1,8 +1,5 @@
 package com.system.worker.execution;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.worker.handler.HandlerRegistry;
 import com.system.worker.handler.JobContext;
 import com.system.worker.handler.JobFailedException;
@@ -13,6 +10,9 @@ import com.system.worker.store.RetryBackoff;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Runs one claimed job and records how it ended, through JobStore's fenced writes.
@@ -69,10 +69,12 @@ public class JobRunner {
         if (result == null) {
             return fail(job, "Handler returned no result");
         }
+        // A handler's result might not serialize (e.g. a node wrapping an arbitrary object);
+        // that is the handler's failure, like any other. Jackson 3's exceptions are unchecked.
         String resultJson;
         try {
             resultJson = objectMapper.writeValueAsString(result);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return fail(job, describe(e));
         }
 

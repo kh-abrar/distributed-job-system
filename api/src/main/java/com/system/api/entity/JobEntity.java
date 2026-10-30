@@ -1,7 +1,6 @@
 
 package com.system.api.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.system.common.enums.JobStatus;
 import com.system.common.enums.JobType;
 import jakarta.persistence.Column;
@@ -15,6 +14,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package com.system.worker.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.system.common.enums.JobType;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Runs one job type. Execution is at-least-once (ADR-003), so a handler must cope

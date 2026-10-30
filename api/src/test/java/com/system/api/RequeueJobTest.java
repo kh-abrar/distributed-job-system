@@ -25,7 +25,7 @@ class RequeueJobTest extends AbstractIntegrationTest {
     private UUID createJob() {
         HttpResponse<String> created = postJob("{\"type\":\"FLAKY\",\"payload\":{}}");
         assertThat(created.statusCode()).isEqualTo(201);
-        return UUID.fromString(json(created).path("id").asText());
+        return UUID.fromString(json(created).path("id").asString());
     }
 
     /**
@@ -80,7 +80,7 @@ class RequeueJobTest extends AbstractIntegrationTest {
         HttpResponse<String> response = requeueJob(id.toString());
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(json(response).path("status").asText()).isEqualTo("PENDING");
+        assertThat(json(response).path("status").asString()).isEqualTo("PENDING");
         assertThat(json(response).path("attempts").asInt()).isZero();
         assertThat(json(response).path("generation").asInt()).isEqualTo(1);
 

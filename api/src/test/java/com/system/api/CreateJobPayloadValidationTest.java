@@ -37,7 +37,7 @@ class CreateJobPayloadValidationTest extends AbstractIntegrationTest {
         HttpResponse<String> response = postJob(body);
 
         assertThat(response.statusCode()).as(body).isEqualTo(400);
-        assertThat(json(response).path("detail").asText()).startsWith("Invalid payload:");
+        assertThat(json(response).path("detail").asString()).startsWith("Invalid payload:");
         assertThat(jobCount()).isZero();
     }
 

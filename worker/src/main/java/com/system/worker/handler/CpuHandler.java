@@ -1,11 +1,11 @@
 package com.system.worker.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.system.common.enums.JobType;
 import com.system.common.payload.InvalidPayloadException;
 import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;

@@ -1,9 +1,9 @@
 package com.system.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ class ListJobsTest extends AbstractIntegrationTest {
     private UUID createJob() {
         HttpResponse<String> created = postJob("{\"type\":\"IO\",\"payload\":{}}");
         assertThat(created.statusCode()).isEqualTo(201);
-        return UUID.fromString(json(created).path("id").asText());
+        return UUID.fromString(json(created).path("id").asString());
     }
 
     private List<UUID> createJobs(int count) {
@@ -40,7 +40,7 @@ class ListJobsTest extends AbstractIntegrationTest {
 
     private static List<UUID> ids(JsonNode page) {
         List<UUID> ids = new ArrayList<>();
-        page.path("items").forEach(item -> ids.add(UUID.fromString(item.path("id").asText())));
+        page.path("items").forEach(item -> ids.add(UUID.fromString(item.path("id").asString())));
         return ids;
     }
 
@@ -55,7 +55,7 @@ class ListJobsTest extends AbstractIntegrationTest {
             JsonNode page = json(response);
             assertThat(page.path("items").size()).isLessThanOrEqualTo(limit);
             seen.addAll(ids(page));
-            cursor = page.path("nextCursor").isNull() ? null : page.path("nextCursor").asText();
+            cursor = page.path("nextCursor").isNull() ? null : page.path("nextCursor").asString();
         } while (cursor != null);
         return seen;
     }
@@ -114,7 +114,7 @@ class ListJobsTest extends AbstractIntegrationTest {
         // A job already shown on page 1 stops being PENDING
         assertThat(cancelJob(sorted.get(0).toString()).statusCode()).isEqualTo(200);
 
-        JsonNode second = json(listJobs("status=PENDING&limit=2&cursor=" + first.path("nextCursor").asText()));
+        JsonNode second = json(listJobs("status=PENDING&limit=2&cursor=" + first.path("nextCursor").asString()));
         assertThat(ids(second)).containsExactly(sorted.get(2), sorted.get(3));
     }
 

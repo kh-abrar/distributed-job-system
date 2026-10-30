@@ -1,7 +1,7 @@
 package com.system.common.payload;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.system.common.enums.JobType;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The parameters each built-in job type reads from its payload, with their ranges

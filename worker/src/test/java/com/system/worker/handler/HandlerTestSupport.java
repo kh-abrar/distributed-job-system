@@ -1,10 +1,8 @@
 package com.system.worker.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -20,11 +18,7 @@ final class HandlerTestSupport {
     }
 
     static JobContext context(int attempt, String payloadJson) {
-        try {
-            return new JobContext(UUID.randomUUID(), 0, attempt, MAPPER.readTree(payloadJson));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return new JobContext(UUID.randomUUID(), 0, attempt, MAPPER.readTree(payloadJson));
     }
 
     /**

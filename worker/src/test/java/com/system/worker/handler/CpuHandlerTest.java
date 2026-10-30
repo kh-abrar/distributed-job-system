@@ -1,9 +1,9 @@
 package com.system.worker.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.databind.JsonNode;
 
 import static com.system.worker.handler.HandlerTestSupport.context;
 import static com.system.worker.handler.HandlerTestSupport.interruptWhileRunning;
@@ -22,8 +22,8 @@ class CpuHandlerTest {
         JsonNode otherSeed = handler.handle(context(1, "{\"iterations\":1000,\"seed\":8}"));
 
         assertThat(first.path("iterations").asLong()).isEqualTo(1000);
-        assertThat(first.path("digest").asText()).hasSize(64).isEqualTo(second.path("digest").asText());
-        assertThat(otherSeed.path("digest").asText()).isNotEqualTo(first.path("digest").asText());
+        assertThat(first.path("digest").asString()).hasSize(64).isEqualTo(second.path("digest").asString());
+        assertThat(otherSeed.path("digest").asString()).isNotEqualTo(first.path("digest").asString());
     }
 
     @Test

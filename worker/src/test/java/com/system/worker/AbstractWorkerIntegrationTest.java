@@ -1,11 +1,12 @@
 package com.system.worker;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.UUID;
 
@@ -22,7 +23,7 @@ import java.util.UUID;
 public abstract class AbstractWorkerIntegrationTest {
 
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16");
 
     static {
         POSTGRES.start();
@@ -31,7 +32,14 @@ public abstract class AbstractWorkerIntegrationTest {
     @Autowired
     protected JdbcTemplate jdbc;
 
+    /**
+     * Before and after every test. After matters because the end-to-end tests start
+     * a live worker whose poll loop begins before their first @BeforeEach: leftover
+     * PENDING jobs from the previous test class would be claimed, and claims could
+     * collide with hand-inserted job_attempts rows (V3's unique constraint).
+     */
     @BeforeEach
+    @AfterEach
     void cleanDatabase() {
         jdbc.execute("TRUNCATE job_attempts, jobs");
     }

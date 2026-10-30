@@ -1,9 +1,10 @@
 package com.system.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +17,7 @@ class GetJobTest extends AbstractIntegrationTest {
     private UUID createJob(String body, String idempotencyKey) {
         HttpResponse<String> created = postJob(body, idempotencyKey);
         assertThat(created.statusCode()).isEqualTo(201);
-        return UUID.fromString(json(created).path("id").asText());
+        return UUID.fromString(json(created).path("id").asString());
     }
 
     @Test
@@ -27,10 +28,10 @@ class GetJobTest extends AbstractIntegrationTest {
 
         assertThat(response.statusCode()).isEqualTo(200);
         JsonNode job = json(response);
-        assertThat(job.path("id").asText()).isEqualTo(id.toString());
-        assertThat(job.path("idempotencyKey").asText()).isEqualTo("get-1");
-        assertThat(job.path("type").asText()).isEqualTo("CPU");
-        assertThat(job.path("status").asText()).isEqualTo("PENDING");
+        assertThat(job.path("id").asString()).isEqualTo(id.toString());
+        assertThat(job.path("idempotencyKey").asString()).isEqualTo("get-1");
+        assertThat(job.path("type").asString()).isEqualTo("CPU");
+        assertThat(job.path("status").asString()).isEqualTo("PENDING");
         assertThat(job.path("attempts").asInt()).isZero();
         assertThat(job.path("maxAttempts").asInt()).isEqualTo(3);
         assertThat(job.path("generation").asInt()).isZero();
@@ -52,10 +53,10 @@ class GetJobTest extends AbstractIntegrationTest {
 
         JsonNode job = json(getJob(id.toString()));
 
-        assertThat(job.path("status").asText()).isEqualTo("SUCCEEDED");
+        assertThat(job.path("status").asString()).isEqualTo("SUCCEEDED");
         assertThat(job.path("attempts").asInt()).isEqualTo(2);
         assertThat(job.path("result").path("attempt").asInt()).isEqualTo(2);
-        assertThat(job.path("lastError").asText()).isEqualTo("Planned failure on attempt 1");
+        assertThat(job.path("lastError").asString()).isEqualTo("Planned failure on attempt 1");
     }
 
     /** FR-8: lease details belong on an admin endpoint, not in the normal response. */
@@ -77,6 +78,25 @@ class GetJobTest extends AbstractIntegrationTest {
         assertThat(response.body()).doesNotContain("worker-secret-7");
     }
 
+    /**
+     * Timestamps are ISO-8601 strings in UTC, e.g. "2026-10-28T15:01:21.545418Z", not
+     * epoch numbers. Pinned because it's part of what clients see, and Jackson's date
+     * defaults have changed between major versions.
+     */
+    @Test
+    void timestampsAreIsoStringsInUtc() {
+        UUID id = createJob("{\"type\":\"IO\",\"payload\":{}}", null);
+
+        JsonNode job = json(getJob(id.toString()));
+
+        for (String field : new String[] {"createdAt", "updatedAt", "runAt"}) {
+            JsonNode value = job.path(field);
+            assertThat(value.isString()).as(field + " is a string").isTrue();
+            assertThat(value.asString()).as(field).endsWith("Z");
+            assertThat(Instant.parse(value.asString())).as(field).isNotNull();
+        }
+    }
+
     /** Job state changes all the time, so a cached copy would be wrong. */
     @Test
     void isNeverCached() {
@@ -94,7 +114,7 @@ class GetJobTest extends AbstractIntegrationTest {
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.headers().firstValue("Content-Type")).hasValueSatisfying(
                 type -> assertThat(type).startsWith("application/problem+json"));
-        assertThat(json(response).path("detail").asText()).contains(unknown.toString());
+        assertThat(json(response).path("detail").asString()).contains(unknown.toString());
     }
 
     @Test

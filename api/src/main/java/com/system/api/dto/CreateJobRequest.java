@@ -1,7 +1,7 @@
 package com.system.api.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.system.common.enums.JobType;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Body of POST /api/jobs. The idempotency key travels in the Idempotency-Key header.

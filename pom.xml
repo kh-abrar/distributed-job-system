@@ -24,56 +24,27 @@
 
     <!-- Project Properties -->
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <!-- release, not just source/target: a newer JDK then also rejects APIs that
-             Java 17 doesn't have, so a build with JDK 21 can't pass where CI (17) fails.
-             When release is set, Maven ignores source and target; they stay for IDEs.
-             IntelliJ 2023.1 doesn't read maven.compiler.release when importing, and without
-             source/target it set every module to Java 1.5, marking modern syntax as errors. -->
+             this Java version doesn't have, so a local build can't pass where CI fails.
+             When release is set, Maven ignores source and target; they stay for IDEs,
+             some of which (IntelliJ 2023.1) don't read maven.compiler.release on import. -->
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <spring-boot.version>3.2.4</spring-boot.version>
-        <!-- Spring Boot 3.2 pins Flyway 9.22, which predates PostgreSQL 16 and warns at
-             startup. 10.10.0 is the version Spring Boot moved to in its next release (3.3). -->
-        <flyway.version>10.10.0</flyway.version>
-        <!-- Spring Boot 3.2 pins Testcontainers 1.19.7, which talks to Docker with API
-             version 1.32. Newer Docker Engines refuse anything below 1.40, so the tests
-             failed on GitHub's runners ("client version 1.32 is too old") while passing
-             on Docker 27 locally. 1.21.4 works with recent Docker Engines. -->
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <spring-boot.version>4.1.2</spring-boot.version>
+        <!-- Importing Spring Boot's dependency list manages libraries but not Maven
+             plugins, so these follow what Spring Boot 4.1.2 recommends -->
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
     </properties>
 
-    <!-- Dependency Version Management -->
+    <!-- Dependency Version Management. Spring Boot 4.1 manages current versions of
+         Flyway (12.4) and Testcontainers (2.0); the overrides 3.2 needed are gone. -->
     <dependencyManagement>
         <dependencies>
-
-            <!-- Flyway, ahead of Spring Boot's list: with an imported dependency list the
-                 first declaration wins, and a property can't override an import -->
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${flyway.version}</version>
-            </dependency>
-
-            <!-- Since Flyway 10, PostgreSQL support is a separate module -->
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-database-postgresql</artifactId>
-                <version>${flyway.version}</version>
-            </dependency>
-
-            <!-- Testcontainers, also ahead of Spring Boot's list, for the same reason.
-                 Its own dependency list keeps every Testcontainers module on one version. -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
 
             <!-- Spring Boot dependency versions -->
             <dependency>
@@ -95,11 +66,24 @@
     </dependencyManagement>
 
     <!-- Build Configuration -->
-    <!-- Declared here, applied only by modules that list it (api), so common stays a plain library jar -->
     <build>
         <pluginManagement>
             <plugins>
 
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+
+                <!-- Declared here, applied only by modules that list it (api, worker),
+                     so common stays a plain library jar -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>

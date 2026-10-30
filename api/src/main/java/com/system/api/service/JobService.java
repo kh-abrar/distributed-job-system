@@ -1,8 +1,5 @@
 package com.system.api.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.system.api.config.JobsProperties;
 import com.system.api.dto.CreateJobRequest;
 import com.system.api.dto.JobPage;
@@ -19,6 +16,8 @@ import com.system.common.payload.InvalidPayloadException;
 import com.system.common.payload.JobPayloads;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -216,12 +215,8 @@ public class JobService {
         } catch (InvalidPayloadException e) {
             throw new InvalidJobRequestException(e.getMessage());
         }
-        byte[] bytes;
-        try {
-            bytes = objectMapper.writeValueAsBytes(payload);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Could not serialize a parsed payload", exception);
-        }
+        // Jackson 3 exceptions are unchecked; serializing a tree we just parsed can't fail
+        byte[] bytes = objectMapper.writeValueAsBytes(payload);
         if (bytes.length > properties.payloadMaxBytes()) {
             throw new InvalidJobRequestException(
                     "Job payload is " + bytes.length + " bytes; the limit is " + properties.payloadMaxBytes());
