@@ -26,8 +26,13 @@
     <properties>
         <java.version>17</java.version>
         <!-- release, not just source/target: a newer JDK then also rejects APIs that
-             Java 17 doesn't have, so a build with JDK 21 can't pass where CI (17) fails -->
+             Java 17 doesn't have, so a build with JDK 21 can't pass where CI (17) fails.
+             When release is set, Maven ignores source and target; they stay for IDEs.
+             IntelliJ 2023.1 doesn't read maven.compiler.release when importing, and without
+             source/target it set every module to Java 1.5, marking modern syntax as errors. -->
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring-boot.version>3.2.4</spring-boot.version>
