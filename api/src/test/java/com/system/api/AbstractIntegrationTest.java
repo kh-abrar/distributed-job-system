@@ -77,6 +77,22 @@ public abstract class AbstractIntegrationTest {
         return postJob(body, null);
     }
 
+    /** GET /api/jobs/{id}. Takes the id as a string so tests can also send malformed ids. */
+    protected HttpResponse<String> getJob(String id) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + "/api/jobs/" + id))
+                .GET()
+                .build();
+        try {
+            return HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** GET /api/jobs with a raw query string, e.g. "status=PENDING&limit=3", or "" for none. */
     protected HttpResponse<String> listJobs(String query) {
         String uri = "http://localhost:" + port + "/api/jobs" + (query.isEmpty() ? "" : "?" + query);

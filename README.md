@@ -7,14 +7,16 @@ pool of workers claims and runs them with at-least-once execution.
 
 This is a learning and portfolio project, not a production platform. The design
 comes first: see the [requirements and design spec](docs/00-requirements.md) and
-the [architecture decisions](docs/decisions/).
+the [architecture decisions](docs/decisions/). Where the build settles one of the
+spec's open questions or differs from it, the ADRs say so (see
+[ADR-006](docs/decisions/ADR-006.md)).
 
 ## Status
 
 | Area | Spec | Status |
 |---|---|---|
 | Submit a job, with idempotency key | FR-1 to FR-6, G1, G4 | Done, tested |
-| Fetch a job | FR-7, FR-8 | Done |
+| Fetch a job | FR-7, FR-8 | Done, tested |
 | List jobs with cursor pagination | FR-9, FR-10 | Done, tested |
 | Cancel a pending job | FR-11 to FR-13 | Done, tested |
 | Manually requeue a dead job | FR-27 | Done, tested |
